@@ -1,0 +1,299 @@
+@font-face {
+    font-family: 'Minecraft';
+    src: url('assets/MinecraftRegular.otf');
+}
+
+:root {
+    --inventory-width: 170px;
+    --inventory-height: 105px;
+    --green-slider-progress: 10;
+}
+
+html {
+    height: 100%;    
+    image-rendering: pixelated;
+    font-family: 'Minecraft';
+    font-kerning: none;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+}
+
+.inventory {
+    transform: scale(var(--gui-scale));
+    position: absolute;
+    left: calc(50% - var(--inventory-width)/2);
+    top: calc(50% - var(--inventory-height)/2);
+    width: var(--inventory-width);
+    height: var(--inventory-height);
+
+    &::before {
+        position: absolute;
+        content: "";
+        display: block;
+        height: calc(100% + 6px);
+        width: calc(100% + 6px);
+        background-image: url('assets/inventory.svg');
+        left: -3px;
+        top: -3px;
+    }
+
+    > .inventory-title {
+        font-size: 8.8px;
+        bottom: 92px;
+        left: 5px;
+    }
+
+    > * {
+        position: absolute;
+    }
+
+}
+
+.slots {
+    display: flex;
+
+    > .slot {
+        position: relative;
+        width: 16px;
+        height: 16px;
+        margin: 1px;
+
+        &::before {
+            content: "";
+            display: block;
+            position: absolute;
+            background-image: url('assets/slot.png');
+            width: 18px;
+            height: 18px;
+            left: -1px;
+            top: -1px;    
+        }
+
+        &:hover::after {
+            position: absolute;
+            content: "";
+            display: block;
+            background-color: rgb(50%, 50%, 50%);
+            width: 100%;
+            height: 100%;
+            mix-blend-mode: screen;
+        }
+
+        > * {
+            position: absolute;
+        }
+    }
+
+    &.left {
+        left: 9px;
+        bottom: 23px;
+    }
+
+    &.right {
+        left: 125px;
+        bottom: 23px;
+    }
+}
+
+.bar {
+    left: 9px;
+    top: 93px;
+    width: 152px;
+    height: 7px;
+    background-image: url('assets/bar.png');
+}
+
+.top-bar {
+    left: 53px;
+    background-image: url('assets/top-bar.png');
+    width: 64px;
+    height: 14px;
+
+    &.first {
+        top: 5px;
+    }
+
+    &.second {
+        top: 26px;
+    }
+}
+
+.all-actions {
+    display: flex;
+    left: 50px;
+    top: 47px;
+    width: calc(18px * 4);
+
+    > .actions.green > * {
+        background-image: url('assets/action-button-green-full.png');
+    }
+    > .actions.red > * {
+        background-image: url('assets/action-button-red-full.png');
+    }
+    > .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        width: calc(18px * 2);
+    
+        > * {
+            position: relative;
+            width: 16px;
+            height: 16px;
+            background-size: cover;
+        }
+    }
+}
+
+.plan-button {
+    top: 37px;
+    left: 18px;
+    width: 18px;
+    height: 18px;
+    background-image: url('assets/plan-button.png');
+}
+
+.slider {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    left: calc(1px + min(150, max(0, var(--slider-progress))) * 1px);
+    background-image: url('assets/slider.png');
+
+    &::before {
+        position: absolute;
+        display: block;
+        content: "";
+        width: 1px;
+        height: 2px;
+        background-color: var(--slider-color);
+        top: 2px;
+        left: 2px;
+    }
+
+    &.red {
+        --slider-progress: var(--red-slider-progress);
+        --slider-color: #ff0000;
+        transform: rotateZ(180deg);
+        top: -2px;
+    }
+
+    &.green {
+        --slider-progress: var(--green-slider-progress);
+        --slider-color: #00ff06;
+        top: 4px;
+    }
+}
+
+.steps {
+    display: flex;
+    gap: 3px;
+    left: 58px;
+    top: 4px;
+
+    > * {
+        display: flex;
+        flex-direction: column;
+        > .indicators {
+            visibility: hidden;
+            position: relative;
+            height: 5px;
+
+            &::before {
+                position: absolute;
+                display: block;
+                content: "";
+                width: 20px;
+                height: 7px;
+                background-image: url('assets/indicator.png');
+                left: -2px;
+                bottom: -1px;
+            }
+
+            > .indicator {
+                position: absolute;
+                height: 7px;
+                width: 20px;
+                left: -2px;
+                bottom: -1px;
+                background-repeat: no-repeat;
+            }
+            > .indicator:nth-child(2) {
+                background-position-y: -2px;
+            }
+            > .indicator:nth-child(3) {
+                background-position-y: -4px;
+            }
+        }
+        > .performed, > .expected {
+            position: relative;
+            width: 10px;
+            height: 10px;
+            margin: 3px;
+
+            &::before {
+                content: "";
+                display: block;
+                position: absolute;
+                width: 16px;
+                height: 16px;
+                left: -3px;
+                top: -3px;
+                background-image: url('assets/performed-step-outline.png');
+            }
+        }
+        > .expected {
+            visibility: hidden;
+        }
+    }
+    > .green, > .orange {
+        > .indicators, > .expected {
+            visibility: visible;
+        }
+    }
+    > .green {
+        > .expected::before {
+            background-image: url('assets/step-green.png');
+        }
+        > .indicators > .indicator.active {
+            background-image: url('assets/indicator-green.png');
+        }
+    }
+    > .orange {
+        > .expected::before {
+            background-image: url('assets/step-orange.png');
+        }
+        > .indicators > .indicator.active {
+            background-image: url('assets/indicator-orange.png');
+        }
+    }
+}
+
+@media screen and (max-width: 400px) {
+    :root {
+        --gui-scale: 1;
+    }
+}
+
+@media screen and (min-width: 400px) and (max-width: 600px) {
+    :root {
+        --gui-scale: 2;
+    }
+}
+
+@media screen and (min-width: 600px) and (max-width: 800px) {
+    :root {
+        --gui-scale: 3;
+    }
+}
+
+@media screen and (min-width: 800px) {
+    :root {
+        --gui-scale: 4;
+    }
+}

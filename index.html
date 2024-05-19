@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Gameplay de Bigorna</title>
+    <link rel="preload" href="style.css" as="style">
+    <link rel="preload" href="assets/action-button-green-full.png" as="image">
+    <link rel="preload" href="assets/action-button-red-full.png" as="image">
+    <link rel="preload" href="assets/bar.png" as="image">
+    <link rel="preload" href="assets/bend.png" as="image">
+    <link rel="preload" href="assets/draw.png" as="image">
+    <link rel="preload" href="assets/flux-bg.png" as="image">
+    <link rel="preload" href="assets/hammer-bg.png" as="image">
+    <link rel="preload" href="assets/hard-hit.png" as="image">
+    <link rel="preload" href="assets/hit.png" as="image">
+    <link rel="preload" href="assets/indicator-green.png" as="image">
+    <link rel="preload" href="assets/indicator-orange.png" as="image">
+    <link rel="preload" href="assets/indicator.png" as="image">
+    <link rel="preload" href="assets/inventory.svg" as="image">
+    <link rel="preload" href="assets/light-hit.png" as="image">
+    <link rel="preload" href="assets/medium-hit.png" as="image">
+    <link rel="preload" href="assets/MinecraftRegular.otf" as="font" type="font/otf">
+    <link rel="preload" href="assets/performed-step-outline.png" as="image">
+    <link rel="preload" href="assets/piece-bg.png" as="image">
+    <link rel="preload" href="assets/plan-button.png" as="image">
+    <link rel="preload" href="assets/punch.png" as="image">
+    <link rel="preload" href="assets/shrink.png" as="image">
+    <link rel="preload" href="assets/slider.png" as="image">
+    <link rel="preload" href="assets/slot.png" as="image">
+    <link rel="preload" href="assets/step-green.png" as="image">
+    <link rel="preload" href="assets/step-orange.png" as="image">
+    <link rel="preload" href="assets/top-bar.png" as="image">
+    <link rel="preload" href="assets/upset.png" as="image">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="inventory">
+        <span class="inventory-title">Anvil</span>
+        <div class="top-bar first"></div>
+        <div class="top-bar second"></div>
+        <div class="steps">
+            <div>
+                <div class="expected"></div>
+                <div class="indicators">
+                    <div class="indicator"></div>
+                    <div class="indicator"></div>
+                    <div class="indicator"></div>
+                </div>
+                <div class="performed"></div>
+            </div>
+            <div>
+                <div class="expected"></div>
+                <div class="indicators">
+                    <div class="indicator"></div>
+                    <div class="indicator"></div>
+                    <div class="indicator"></div>
+                </div>
+                <div class="performed"></div>
+            </div>
+            <div>
+                <div class="expected"></div>
+                <div class="indicators">
+                    <div class="indicator"></div>
+                    <div class="indicator"></div>
+                    <div class="indicator"></div>
+                </div>
+                <div class="performed"></div>
+            </div>
+        </div>
+        <div class="plan-button"></div>
+        <div class="slots left">
+            <div class="slot"></div>
+            <div class="slot"><img src="assets/piece-bg.png"></div>
+        </div>
+        <div class="all-actions">
+            <div class="red actions">
+                <img src="assets/light-hit.png">
+                <img src="assets/medium-hit.png">
+                <img src="assets/hard-hit.png">
+                <img src="assets/draw.png">
+            </div>
+            <div class="green actions">
+                <img src="assets/punch.png">
+                <img src="assets/bend.png">
+                <img src="assets/upset.png">
+                <img src="assets/shrink.png">
+            </div>
+        </div>
+        <div class="slots right">
+            <div class="slot"><img src="assets/hammer-bg.png"></div>
+            <div class="slot"><img src="assets/flux-bg.png"></div>
+        </div>
+        <div class="bar">
+            <div class="green slider"></div>
+            <div class="red slider"></div>
+        </div>
+    </div>
+</body>
+</html>
