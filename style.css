@@ -42,7 +42,7 @@ body {
         top: -3px;
     }
 
-    > .inventory-title {
+    > .title {
         font-size: 8.8px;
         bottom: 92px;
         left: 5px;
@@ -51,7 +51,6 @@ body {
     > * {
         position: absolute;
     }
-
 }
 
 .slots {
@@ -129,12 +128,6 @@ body {
     top: 47px;
     width: calc(18px * 4);
 
-    > .actions.green > * {
-        background-image: url('assets/action-button-green-full.png');
-    }
-    > .actions.red > * {
-        background-image: url('assets/action-button-red-full.png');
-    }
     > .actions {
         display: flex;
         flex-wrap: wrap;
@@ -146,6 +139,14 @@ body {
             width: 16px;
             height: 16px;
             background-size: cover;
+        }
+
+        &.green > * {
+            background-image: url('assets/action-button-green-full.png');
+        }
+
+        &.red > * {
+            background-image: url('assets/action-button-red-full.png');
         }
     }
 }
@@ -171,22 +172,27 @@ body {
         content: "";
         width: 1px;
         height: 2px;
-        background-color: var(--slider-color);
         top: 2px;
         left: 2px;
     }
 
     &.red {
         --slider-progress: var(--red-slider-progress);
-        --slider-color: #ff0000;
         transform: rotateZ(180deg);
         top: -2px;
     }
 
     &.green {
         --slider-progress: var(--green-slider-progress);
-        --slider-color: #00ff06;
         top: 4px;
+    }
+
+    &.red::before {
+        background-color: #ff0000;
+    }
+
+    &.green::before {
+        background-color: #00ff06;
     }
 }
 
@@ -271,6 +277,60 @@ body {
         > .indicators > .indicator.active {
             background-image: url('assets/indicator-orange.png');
         }
+    }
+}
+
+.bg {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+
+    &.piece {
+        background-image: url('assets/piece-bg.png');
+    }
+
+    &.hammer {
+        background-image: url('assets/hammer-bg.png');
+    }
+
+    &.flux {
+        background-image: url('assets/flux-bg.png');
+    }
+
+    &.hit {
+        background-image: url('assets/hit.png');
+    }
+
+    &.light-hit {
+        background-image: url('assets/light-hit.png');
+    }
+
+    &.medium-hit {
+        background-image: url('assets/medium-hit.png');
+    }
+
+    &.hard-hit {
+        background-image: url('assets/hard-hit.png');
+    }
+
+    &.draw {
+        background-image: url('assets/draw.png');
+    }
+
+    &.punch {
+        background-image: url('assets/punch.png');
+    }
+
+    &.bend {
+        background-image: url('assets/bend.png');
+    }
+
+    &.upset {
+        background-image: url('assets/upset.png');
+    }
+
+    &.shrink {
+        background-image: url('assets/shrink.png');
     }
 }
 
