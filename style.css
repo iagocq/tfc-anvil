@@ -213,6 +213,11 @@ body {
     left: 58px;
     top: 4px;
 
+    [data-tooltip] {
+        --tooltip-offset-x: 8;
+        --tooltip-offset-y: -16;
+    }
+
     > * {
         display: flex;
         flex-direction: column;
