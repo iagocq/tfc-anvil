@@ -2,7 +2,7 @@ var tooltipText = "";
 
 const [tooltip] = document.getElementsByClassName('tooltip');
 
-document.getElementsByClassName('inventory')[0].addEventListener('mousemove', ev => {
+document.addEventListener('mousemove', ev => {
     tooltip.classList = ['tooltip'];
 
     const el = ev.target;
