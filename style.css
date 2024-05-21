@@ -1,12 +1,20 @@
 @font-face {
     font-family: 'Minecraft';
-    src: url('assets/MinecraftRegular.otf');
+    src: url('assets/Minecraft.otf');
 }
 
 :root {
     --inventory-width: 170px;
     --inventory-height: 105px;
     --green-slider-progress: 10;
+    --tooltip-x: 0;
+    --tooltip-y: 0;
+    --tooltip-offset-x: 0;
+    --tooltip-offset-y: 0;
+    --px: calc(1px * var(--gui-scale));
+    --2px: calc(2px * var(--gui-scale));
+    --3px: calc(3px * var(--gui-scale));
+    --4px: calc(4px * var(--gui-scale));
 }
 
 html {
@@ -14,6 +22,7 @@ html {
     image-rendering: pixelated;
     font-family: 'Minecraft';
     font-kerning: none;
+    -webkit-font-smoothing: none;
 }
 
 body {
@@ -139,6 +148,8 @@ body {
             width: 16px;
             height: 16px;
             background-size: cover;
+            --tooltip-offset-x: 8;
+            --tooltip-offset-y: 4;
         }
 
         &.green > * {
@@ -332,6 +343,126 @@ body {
     &.shrink {
         background-image: url('assets/shrink.png');
     }
+}
+
+.tooltip {
+    position: absolute;
+    left: calc((var(--tooltip-offset-x) + var(--tooltip-x)) * var(--px));
+    top: calc((var(--tooltip-offset-y) + var(--tooltip-y)) * var(--px));
+    z-index: 9999;
+
+    & > .tooltip-text {
+        position: relative;
+        color: #fcfcfc;
+        font-size: calc(8.8px * var(--gui-scale));
+        bottom: var(--px);
+        text-shadow: #626262 var(--px) var(--px);
+    }
+
+    &::before, &::after {
+        position: absolute;
+        display: block;
+        content: "";
+    }
+    
+    &::before {
+        top: calc(-4 * var(--px));
+        left: calc(-4 * var(--px));
+        height: calc((var(--tooltip-height) + 9) * var(--px));
+        width: calc((var(--tooltip-width) + 9) * var(--px));
+        --bg: rgba(16, 0, 16, calc(16/17));
+        background:
+            linear-gradient( /* backdrop */
+                var(--bg),
+                var(--bg)
+            ) no-repeat,
+            linear-gradient( /* top side */
+                var(--bg),
+                var(--bg)
+            ) no-repeat,
+            linear-gradient( /* right side */
+                var(--bg),
+                var(--bg)
+            ) no-repeat,
+            linear-gradient( /* bottom side */
+                var(--bg),
+                var(--bg)
+            ) no-repeat,
+            linear-gradient( /* left side */
+                var(--bg),
+                var(--bg)
+            ) no-repeat
+        ;
+        background-position:
+            /* backdrop */
+            left var(--px) top var(--px),
+            /* top side */
+            left var(--px) top 0,
+            /* right side */
+            right 0 top var(--px),
+            /* bottom side */
+            left var(--px) bottom 0,
+            /* left side */
+            left 0 top var(--px)
+        ;
+
+        background-size:
+            calc(100% - var(--2px)) calc(100% - var(--2px)),
+            calc(100% - var(--2px)) var(--px),
+            var(--px) calc(100% - var(--2px)),
+            calc(100% - var(--2px)) var(--px),
+            var(--px) calc(100% - var(--2px))
+        ;
+    }
+
+    &::after {
+        --outline: rgba(75, 0, 240, calc(1/3));
+        --outline-dark: rgba(38, 0, 121, calc(1/3));
+        top: calc(-3 * var(--px));
+        left: calc(-3 * var(--px));
+        height: calc((var(--tooltip-height) + 7) * var(--px));
+        width: calc((var(--tooltip-width) + 7) * var(--px));
+        background:
+            linear-gradient( /* top side */
+                var(--outline),
+                var(--outline)
+            ) no-repeat,
+            linear-gradient( /* right side */
+                to bottom,
+                var(--outline),
+                var(--outline-dark)
+            ) no-repeat,
+            linear-gradient( /* bottom side */
+                var(--outline-dark),
+                var(--outline-dark)
+            ) no-repeat,
+            linear-gradient( /* left side */
+                to bottom,
+                var(--outline),
+                var(--outline-dark)
+            ) no-repeat
+        ;
+        background-position:
+            /* top side */
+            left 0 top 0,
+            /* right side */
+            right 0 top var(--px),
+            /* bottom side */
+            left 0 bottom 0,
+            /* left side */
+            left 0 top var(--px)
+        ;
+        background-size:
+            100% var(--px),
+            var(--px) calc(100% - var(--2px)),
+            100% var(--px),
+            var(--px) calc(100% - var(--2px))
+        ;
+    }
+}
+
+.hidden {
+    visibility: collapse;
 }
 
 @media screen and (max-width: 400px) {
