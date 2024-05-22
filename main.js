@@ -232,11 +232,13 @@ stepsEl.forEach((el, i) => {
             const nameidx = nameCycle.indexOf(expected[i].name);
             expected[i].name = nameCycle[(nameidx + 1) % nameCycle.length];
         }
+        refreshHints();
         refreshExpected();
-        refreshTooltip(ev.target);
+        refreshTooltip(el);
     }
     function clickIndicators(el, i) {
         const exp = expected[i];
+        if (exp === undefined) return;
         if (exp.last_idx !== undefined) {
             if (i !== 0) {
                 exp.notlast = true;
@@ -251,11 +253,14 @@ stepsEl.forEach((el, i) => {
             exp.last_idx = i;
             delete exp.any
         }
-        console.log(exp);
+        refreshHints();
         refreshExpected();
     }
-    el.getElementsByClassName('expected')[0].addEventListener('click', clickStep.bind(null, el, i));
-    el.getElementsByClassName('indicators')[0].addEventListener('click', clickIndicators.bind(null, el, i));
+
+    const expectedEl = el.getElementsByClassName('expected')[0];
+    const indicatorsEl = el.getElementsByClassName('indicators')[0];
+    expectedEl.addEventListener('click', clickStep.bind(null, expectedEl, i));
+    indicatorsEl.addEventListener('click', clickIndicators.bind(null, indicatorsEl, i));
 });
 
 function updateSteps() {
@@ -298,7 +303,7 @@ function expectationForStep(i, counted) {
         indicators = [true, true, true];
     } else if (exp.notlast) {
         hitWhen = 'Not Last';
-        indicators = [true, true, false];
+        indicators = [false, true, true];
     } else {
         hitWhen = ['Last', 'Second Last', 'Third Last'][exp.last_idx];
         indicators[exp.last_idx] = true;
@@ -423,6 +428,7 @@ function refreshHints(greenProgress = undefined) {
             for (let i = 0; i < p.length; i++) {
                 let e = p[i];
                 if (e == Wildcard) continue;
+                if (e == undefined) continue;
                 else if (e.notlast) {
                     if (i == p.length) {
                         valid = false;
