@@ -20,7 +20,15 @@ function valueToStep(v) {
 }
 
 let steps = [];
-let expected = [];
+let expected = [
+    {
+        value: 0,
+        any: true,
+    }, {
+        value: -15,
+        last_idx: 1
+    }
+];
 let nextSteps = [];
 
 const greenSlider = document.querySelector('.green.slider');
@@ -230,10 +238,6 @@ function calculateSteps(V, start = 0, min = 0, max = 150) {
 }
 
 function refreshSteps() {
-    const green = getProgress(greenSlider);
-    const red = getProgress(redSlider);
-    const choices = calculateSteps(Object.values(stepMap), green);
-
     function findGoodSolution(target, ending, include = []) {
         const steps = choices[target];
         if (!steps || steps.length == 0) return;
@@ -242,8 +246,8 @@ function refreshSteps() {
 
         const allMatch = ending.every(v => stepsMustMatch.includes(v));
         if (allMatch) {
-            const stepsSlice = ending.length == 0 ? steps : steps.slice(0, -ending.length);
-            return stepsSlice.concat(ending, include.reverse());
+            const sliceEnd = -ending.length || undefined;
+            return steps.slice(0, sliceEnd).concat(ending, include.reverse());
         } else {
             const newEnding = [...ending];
             const last = newEnding.pop();
@@ -251,27 +255,119 @@ function refreshSteps() {
         }
     };
 
-    const mustTake = [-15, 16];
-
-    const result = findGoodSolution(red, mustTake);
-    let impossible = false;
-    if (!result) {
-        impossible = true;
-    } else {
-        let sum = green;
-        for (const s of result) {
-            sum += s;
-            if (sum < 0 || sum > 150) {
-                impossible = true;
-                break;
+    function makePossibleEnds(expected) {
+        let end = expected.slice(-3);
+        const Wildcard = {};
+        end = Array(3 - end.length).fill(Wildcard).concat(end);
+        const permutationsNums = [
+            [0, 1, 2], [0, 2, 1],
+            [1, 0, 2], [1, 2, 0],
+            [2, 0, 1], [2, 1, 0]
+        ];
+        function isValidPermutation(p) {
+            let valid = true;
+            for (let i = 0; i < p.length; i++) {
+                let e = p[i];
+                if (e == Wildcard) continue;
+                else if (e.notlast) {
+                    if (i == p.length) {
+                        valid = false;
+                        break;
+                    }
+                } else if (!e.any && e.last_idx !== undefined && 2 - e.last_idx !== i) {
+                    valid = false;
+                    break;
+                }
             }
+            return valid;
         }
+
+        const permutations = permutationsNums.map(idxl => idxl.map(i => end[i])).filter(isValidPermutation);
+        for (const i in permutations) {
+            let p = permutations[i].map(v => {
+                if (v == Wildcard) return Wildcard;
+                else return v.value;
+            });
+            let lastidx = -1;
+            while (p[lastidx+1] == Wildcard) {
+                lastidx++;
+            }
+            if (lastidx > -1) {
+                p = p.slice(lastidx+1)
+            }
+            permutations[i] = p;
+        }
+
+        let ends = permutations;
+        let resolveWildcard;
+        do {
+            resolveWildcard = false;
+
+            let newEnds = [];
+            for (const i in ends) {
+                let p = ends[i];
+
+                let idx = p.indexOf(Wildcard);
+                let anyhitidx = p.indexOf(0);
+                if (anyhitidx !== -1) {
+                    ['hard-hit', 'medium-hit', 'light-hit'].map(s => {
+                        let newp = p.slice();
+                        newp[anyhitidx] = stepMap[s];
+                        return newp;
+                    }).forEach(v =>
+                        newEnds.push(v)
+                    );
+                    resolveWildcard = true;
+                } else if (idx == -1) {
+                    newEnds.push(p);
+                } else {
+                    Object.values(stepMap).map(s => {
+                        let newp = p.slice();
+                        newp[idx] = s;
+                        return newp;
+                    }).forEach(v =>
+                        newEnds.push(v)
+                    );
+                    resolveWildcard = true;
+                }
+            }
+            ends = newEnds;
+        } while (resolveWildcard);
+
+        return ends;
     }
 
-    if (impossible) {
-        nextSteps = undefined;
+    function calculateResult(mustTake) {
+        const result = findGoodSolution(red, mustTake);
+        let impossible = false;
+        if (!result) {
+            impossible = true;
+        } else {
+            let sum = green;
+            for (const s of result) {
+                sum += s;
+                if (sum < 0 || sum > 150) {
+                    impossible = true;
+                    break;
+                }
+            }
+        }
+        if (!impossible) {
+            return result;
+        }
+    }
+    const green = getProgress(greenSlider);
+    const red = getProgress(redSlider);
+    const choices = calculateSteps(Object.values(stepMap), green);
+    const bestResult = makePossibleEnds(expected)
+        .map(calculateResult)
+        .filter(v => v !== undefined)
+        .sort((a, b) => a.length - b.length)[0];
+    
+    if (bestResult) {
+        nextSteps = bestResult.map(valueToStep);
     } else {
-        nextSteps = result.map(valueToStep);
+        nextSteps = undefined;
     }
     refreshNextSteps();
 }
