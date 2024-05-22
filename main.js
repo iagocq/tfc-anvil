@@ -13,16 +13,31 @@ const stepMap = {
     'shrink': 16,
 }
 const stepNames = Object.keys(stepMap);
+const valuesToStep = {};
+stepNames.forEach(name => valuesToStep[stepMap[name]] = name);
+function valueToStep(v) {
+    return valuesToStep[v];
+}
 
 let steps = [];
+let expected = [];
+let nextSteps = [];
 
 const greenSlider = document.querySelector('.green.slider');
+const redSlider = document.querySelector('.red.slider');
 
 const dragging = {
     element: undefined,
     initialY: undefined,
     initialX: undefined,
 };
+
+let lastShiftState = false;
+
+const stepsEl = document.querySelectorAll('.steps > *');
+const performedEls = [...stepsEl].map(e => e.getElementsByClassName('performed')[0]);
+
+let lastMouseX, lastMouseY;
 
 function getGuiScale() {
     return window.getComputedStyle(document.body).getPropertyValue('--gui-scale');
@@ -70,7 +85,7 @@ document.addEventListener('mousemove', ev => {
 
     if (!ev.target) return;
 
-    refreshTooltip(ev.target, ev.x, ev.y);
+    refreshTooltip(ev.target);
 });
 
 const allActions = document.querySelectorAll('.all-actions [data-tooltip]');
@@ -132,9 +147,24 @@ document.addEventListener('mousemove', ev => {
         const bar = document.querySelector('.bar');
         const barBox = bar.getBoundingClientRect();
         const [barX, barY] = screenToInvCoords(bar, barBox.x, barBox.y, scale);
+        const oldProgress = getProgress(el);
         const newProgress = Math.min(150, Math.max(0, x - barX - offX));
-        updateProgress(el, newProgress, ev.shiftKey);
+        updateProgress(el, newProgress, true);
+        refreshTooltip(ev.target);
+
+        if (oldProgress !== newProgress) {
+            refreshSteps();
+        }
     }
+});
+
+document.addEventListener('mouseup', ev => {
+    if (!dragging.element) return;
+
+    if (!ev.shiftKey) {
+        showProgressAll(false);
+    }
+    dragging.element = undefined;
 });
 
 function showProgressAll(show) {
@@ -147,7 +177,6 @@ function showProgressAll(show) {
     }
 }
 
-let lastShiftState = false;
 document.addEventListener('keydown', ev => {
     if (lastShiftState != ev.shiftKey) {
         showProgressAll(ev.shiftKey);
@@ -164,13 +193,6 @@ document.addEventListener('keyup', ev => {
     lastShiftState = ev.shiftKey;
 });
 
-document.addEventListener('mouseup', () => {
-    dragging.element = undefined;
-});
-
-const stepsEl = document.querySelectorAll('.steps > *');
-const performedEls = [...stepsEl].map(e => e.getElementsByClassName('performed')[0]);
-
 function updateSteps() {
     const stepsFromEnd = steps.slice(-3).reverse();
     performedEls.forEach(el => el.replaceChildren([]));
@@ -180,4 +202,80 @@ function updateSteps() {
         newChild.classList = 'bg ' + s;
         performedEl.appendChild(newChild);
     });
+}
+
+function calculateSteps(V, start = 0, min = 0, max = 150) {
+    const dp = Array(max + 1).fill(Infinity);
+    const choices = dp.map(() => []);
+    dp[start] = 0;
+
+    for (let changed = true; changed;) {
+        changed = false;
+        V.forEach(v => {
+            for (let j = Math.max(v, min); j <= max; j++) {
+                let i = j - v;
+                if (i >= min && i <= max) {
+                    const u = dp[i];
+                    if (dp[j] > u + 1) {
+                        changed = true;
+                        dp[j] = u + 1;
+                        choices[j] = choices[i].concat([v]);
+                    }
+                }
+            }
+        });
+    }
+
+    return choices;
+}
+
+function refreshSteps() {
+    const green = getProgress(greenSlider);
+    const red = getProgress(redSlider);
+    const choices = calculateSteps(Object.values(stepMap), green);
+
+    function findGoodSolution(target, ending, include = []) {
+        const steps = choices[target];
+        if (!steps || steps.length == 0) return;
+
+        const stepsMustMatch = steps.slice(-ending.length);
+
+        const allMatch = ending.every(v => stepsMustMatch.includes(v));
+        if (allMatch) {
+            const stepsSlice = ending.length == 0 ? steps : steps.slice(0, -ending.length);
+            return stepsSlice.concat(ending, include.reverse());
+        } else {
+            const newEnding = [...ending];
+            const last = newEnding.pop();
+            return findGoodSolution(target - last, newEnding, include.concat(last));
+        }
+    };
+
+    const mustTake = [-15, 16];
+
+    const result = findGoodSolution(red, mustTake);
+    let impossible = false;
+    if (!result) {
+        impossible = true;
+    } else {
+        let sum = green;
+        for (const s of result) {
+            sum += s;
+            if (sum < 0 || sum > 150) {
+                impossible = true;
+                break;
+            }
+        }
+    }
+
+    if (impossible) {
+        nextSteps = undefined;
+    } else {
+        nextSteps = result.map(valueToStep);
+    }
+    refreshNextSteps();
+}
+
+function refreshNextSteps() {
+    console.log(nextSteps);
 }

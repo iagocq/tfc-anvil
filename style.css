@@ -22,6 +22,7 @@ html {
     font-family: 'Minecraft';
     font-kerning: none;
     -webkit-font-smoothing: none;
+    user-select: none;
 }
 
 body {
@@ -172,7 +173,7 @@ body {
 .slider {
     position: absolute;
     width: 9px;
-    height: 5px;
+    height: 7px;
     --zero: -1px;
     left: calc(var(--zero) + min(150, max(0, var(--slider-progress))) * 1px);
     background-image: url('assets/slider.png');
@@ -193,7 +194,7 @@ body {
     &.red {
         --slider-progress: 0;
         transform: rotateZ(180deg);
-        top: -2px;
+        top: -4px;
     }
 
     &.green {
