@@ -430,7 +430,7 @@ function refreshHints(greenProgress = undefined) {
                 if (e == Wildcard) continue;
                 if (e == undefined) continue;
                 else if (e.notlast) {
-                    if (i == p.length) {
+                    if (i == p.length-1) {
                         valid = false;
                         break;
                     }
