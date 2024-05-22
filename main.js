@@ -33,15 +33,7 @@ function valueToStep(v) {
 }
 
 let steps = [];
-let expected = [
-    {
-        name: 'hit',
-        any: true,
-    }, {
-        name: 'draw',
-        last_idx: 1
-    }
-];
+let expected = [];
 let nextSteps = [];
 
 const greenSlider = document.querySelector('.green.slider');
@@ -58,6 +50,7 @@ let lastShiftState = false;
 const stepsEl = document.querySelectorAll('.real.steps > *');
 const performedEls = [...stepsEl].map(e => e.getElementsByClassName('performed')[0]);
 const expectedEls = [...stepsEl].map(e => e.getElementsByClassName('expected')[0]);
+const indicatorsEl = [...stepsEl].map(e => e.getElementsByClassName('indicators')[0]);
 const hintsStepsEl = document.querySelectorAll('.hints.steps > *');
 const performHintsEls = [...hintsStepsEl].map(e => e.getElementsByClassName('performed')[0]);
 let lastMouseX, lastMouseY;
@@ -227,6 +220,44 @@ document.addEventListener('keyup', ev => {
     lastShiftState = ev.shiftKey;
 });
 
+stepsEl.forEach((el, i) => {
+    function clickStep(el, i) {
+        const nameCycle = ['hit', 'draw', 'punch', 'bend', 'upset', 'shrink'];
+        if (expected[i] === undefined) {
+            expected[i] = {
+                name: nameCycle[0],
+                last_idx: i
+            };
+        } else {
+            const nameidx = nameCycle.indexOf(expected[i].name);
+            expected[i].name = nameCycle[(nameidx + 1) % nameCycle.length];
+        }
+        refreshExpected();
+        refreshTooltip(ev.target);
+    }
+    function clickIndicators(el, i) {
+        const exp = expected[i];
+        if (exp.last_idx !== undefined) {
+            if (i !== 0) {
+                exp.notlast = true;
+            } else {
+                exp.any = true;
+            }
+            delete exp.last_idx;
+        } else if (exp.notlast !== undefined) {
+            exp.any = true;
+            delete exp.notlast;
+        } else if (exp.any !== undefined) {
+            exp.last_idx = i;
+            delete exp.any
+        }
+        console.log(exp);
+        refreshExpected();
+    }
+    el.getElementsByClassName('expected')[0].addEventListener('click', clickStep.bind(null, el, i));
+    el.getElementsByClassName('indicators')[0].addEventListener('click', clickIndicators.bind(null, el, i));
+});
+
 function updateSteps() {
     const stepsFromEnd = steps.slice(-3).reverse();
     performedEls.forEach(el => el.replaceChildren([]));
@@ -254,7 +285,7 @@ function refreshNextHints() {
     })
 }
 
-function expectationForStep(i) {
+function expectationForStep(i, counted) {
     let valid = true;
     const exp = expected[i];
     if (!exp) return false;
@@ -269,7 +300,7 @@ function expectationForStep(i) {
         hitWhen = 'Not Last';
         indicators = [true, true, false];
     } else {
-        hitWhen = ['Third Last', 'Second Last', 'Last'][exp.last_idx];
+        hitWhen = ['Last', 'Second Last', 'Third Last'][exp.last_idx];
         indicators[exp.last_idx] = true;
     }
 
@@ -282,7 +313,7 @@ function expectationForStep(i) {
     for (let j = 0; j < 3; j++) {
         const performed = rsteps[j];
         if (!performed) continue;
-        if (nameMatch(performed)) {
+        if (!counted[j] && nameMatch(performed)) {
             if (exp.any) {
                 found = true;
             } else if (exp.notlast && j !== 0) {
@@ -290,6 +321,10 @@ function expectationForStep(i) {
             } else if (exp.last_idx === j) {
                 found = true;
             }
+        }
+        if (found) {
+            counted[j] = true;
+            break;
         }
     }
 
@@ -303,11 +338,12 @@ function expectationForStep(i) {
 
 function refreshExpected() {
     expectedEls.forEach(el => el.replaceChildren([]));
+    let counted = [false, false, false];
     stepsEl.forEach((stEl, i) => {
         const exp = expected[i];
         const el = expectedEls[i];
         if (exp) {
-            const [valid, indicators, txt] = expectationForStep(i);
+            const [valid, indicators, txt] = expectationForStep(i, counted);
             el.dataset.tooltip = txt;
             const newChild = document.createElement('div');
             newChild.dataset.tooltip = txt;
@@ -319,7 +355,12 @@ function refreshExpected() {
                 indicatorsEl[i].classList = set ? 'indicator active' : 'indicator';
             });
         } else {
-            el.dataset.tooltip = "";
+            const defaultExpectedTooltips = [
+                "Select Last Step",
+                "Select Second Last Step",
+                "Select Third Last Step"
+            ];
+            el.dataset.tooltip = defaultExpectedTooltips[i];
             stEl.classList = '';
         }
     });

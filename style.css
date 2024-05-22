@@ -226,7 +226,7 @@ body {
         display: flex;
         flex-direction: column;
         > .indicators {
-            visibility: hidden;
+            opacity: 0;
             position: relative;
             height: 5px;
 
@@ -274,12 +274,12 @@ body {
             }
         }
         > .expected {
-            visibility: hidden;
+            opacity: 0;
         }
     }
     > .green, > .orange {
         > .indicators, > .expected {
-            visibility: visible;
+            opacity: 1;
         }
     }
     > .green {
