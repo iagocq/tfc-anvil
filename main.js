@@ -35,6 +35,7 @@ function valueToStep(v) {
 let steps = [];
 let expected = [];
 let nextSteps = [];
+let onValidSolution = false;
 
 const greenSlider = document.querySelector('.green.slider');
 const redSlider = document.querySelector('.red.slider');
@@ -115,6 +116,8 @@ allActions.forEach(el => el.addEventListener('click', ev => {
         if (step) {
             greenProgress += step;
             steps.push(stepName);
+            refreshExpected();
+
             if (!nextSteps || nextSteps.length == 0) {
                 refreshHints(greenProgress);
             } else {
@@ -135,7 +138,6 @@ allActions.forEach(el => el.addEventListener('click', ev => {
 
     updateProgress(greenSlider, greenProgress);
     updateSteps();
-    refreshExpected();
 }));
 
 function updateProgress(slider, progress, showTooltip) {
@@ -232,8 +234,8 @@ stepsEl.forEach((el, i) => {
             const nameidx = nameCycle.indexOf(expected[i].name);
             expected[i].name = nameCycle[(nameidx + 1) % nameCycle.length];
         }
-        refreshHints();
         refreshExpected();
+        refreshHints();
         refreshTooltip(el);
     }
     function clickIndicators(el, i) {
@@ -253,8 +255,8 @@ stepsEl.forEach((el, i) => {
             exp.last_idx = i;
             delete exp.any
         }
-        refreshHints();
         refreshExpected();
+        refreshHints();
     }
 
     const expectedEl = el.getElementsByClassName('expected')[0];
@@ -344,6 +346,7 @@ function expectationForStep(i, counted) {
 function refreshExpected() {
     expectedEls.forEach(el => el.replaceChildren([]));
     let counted = [false, false, false];
+    onValidSolution = true;
     stepsEl.forEach((stEl, i) => {
         const exp = expected[i];
         const el = expectedEls[i];
@@ -359,6 +362,7 @@ function refreshExpected() {
             indicators.forEach((set, i) => {
                 indicatorsEl[i].classList = set ? 'indicator active' : 'indicator';
             });
+            onValidSolution &&= valid;
         } else {
             const defaultExpectedTooltips = [
                 "Select Last Step",
@@ -371,10 +375,20 @@ function refreshExpected() {
     });
 }
 
-function calculateSteps(V, start = 0, min = 0, max = 150) {
+function calculateSteps(V, start = 0, returnToStart = false, min = 0, max = 150) {
     const dp = Array(max + 1).fill(Infinity);
     const choices = dp.map(() => []);
-    dp[start] = 0;
+    if (!returnToStart) {
+        dp[start] = 0;
+    } else {
+        V.forEach(v => {
+            const i = start + v;
+            if (i >= min && i <= max) {
+                dp[i] = 1;
+                choices[i].push(v);
+            }
+        });
+    }
 
     for (let changed = true; changed;) {
         changed = false;
@@ -527,7 +541,8 @@ function refreshHints(greenProgress = undefined) {
     }
     const green = greenProgress;
     const red = getProgress(redSlider);
-    const choices = calculateSteps(Object.values(stepMap), green);
+    const returnToStart = red === green && !onValidSolution;
+    const choices = calculateSteps(Object.values(stepMap), green, returnToStart);
     const bestResult = makePossibleEnds(expected)
         .map(calculateResult)
         .filter(v => v !== undefined)
