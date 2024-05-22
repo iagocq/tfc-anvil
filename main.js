@@ -42,9 +42,10 @@ const dragging = {
 
 let lastShiftState = false;
 
-const stepsEl = document.querySelectorAll('.steps > *');
+const stepsEl = document.querySelectorAll('.real.steps > *');
 const performedEls = [...stepsEl].map(e => e.getElementsByClassName('performed')[0]);
-
+const hintsStepsEl = document.querySelectorAll('.hints.steps > *');
+const performHintsEls = [...hintsStepsEl].map(e => e.getElementsByClassName('performed')[0]);
 let lastMouseX, lastMouseY;
 
 function getGuiScale() {
@@ -107,6 +108,16 @@ allActions.forEach(el => el.addEventListener('click', ev => {
         if (step) {
             greenProgress += step;
             steps.push(stepName);
+            if (!nextSteps || nextSteps.length == 0) {
+                refreshHints(greenProgress);
+            } else {
+                const hint = nextSteps.pop();
+                if (hint !== stepName) {
+                    refreshHints(greenProgress);
+                } else {
+                    refreshNextHints();
+                }
+            }
         }
     });
 
@@ -161,7 +172,7 @@ document.addEventListener('mousemove', ev => {
         refreshTooltip(ev.target);
 
         if (oldProgress !== newProgress) {
-            refreshSteps();
+            refreshHints();
         }
     }
 });
@@ -212,6 +223,22 @@ function updateSteps() {
     });
 }
 
+function refreshNextHints() {
+    const toDisplay = (nextSteps || []).slice(-3).reverse();
+    performHintsEls.forEach(el => el.replaceChildren([]));
+    performHintsEls.forEach((el, i) => {
+        const nextStep = toDisplay[i];
+        if (nextStep) {
+            const newChild = document.createElement('div');
+            newChild.classList = 'bg ' + nextStep;
+            el.appendChild(newChild);
+            el.classList = 'performed';
+        } else {
+            el.classList = 'performed hidden';
+        }
+    })
+}
+
 function calculateSteps(V, start = 0, min = 0, max = 150) {
     const dp = Array(max + 1).fill(Infinity);
     const choices = dp.map(() => []);
@@ -237,7 +264,7 @@ function calculateSteps(V, start = 0, min = 0, max = 150) {
     return choices;
 }
 
-function refreshSteps() {
+function refreshHints(greenProgress = undefined) {
     function findGoodSolution(target, ending, include = []) {
         const steps = choices[target];
         if (!steps || steps.length == 0) return;
@@ -356,7 +383,10 @@ function refreshSteps() {
             return result;
         }
     }
-    const green = getProgress(greenSlider);
+    if (greenProgress === undefined) {
+        greenProgress = getProgress(greenSlider);
+    }
+    const green = greenProgress;
     const red = getProgress(redSlider);
     const choices = calculateSteps(Object.values(stepMap), green);
     const bestResult = makePossibleEnds(expected)
@@ -365,13 +395,9 @@ function refreshSteps() {
         .sort((a, b) => a.length - b.length)[0];
     
     if (bestResult) {
-        nextSteps = bestResult.map(valueToStep);
+        nextSteps = bestResult.map(valueToStep).reverse();
     } else {
         nextSteps = undefined;
     }
-    refreshNextSteps();
-}
-
-function refreshNextSteps() {
-    console.log(nextSteps);
+    refreshNextHints();
 }
