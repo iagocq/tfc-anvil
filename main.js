@@ -12,8 +12,21 @@ const stepMap = {
     'upset': 13,
     'shrink': 16,
 }
+nameMap = {
+    'draw': 'Draw',
+    'hard-hit': 'Hard Hit',
+    'medium-hit': 'Medium Hit',
+    'light-hit': 'Light Hit',
+    'hit': 'Hit',
+    'punch': 'Punch',
+    'bend': 'Bend',
+    'upset': 'Upset',
+    'shrink': 'Shrink'
+}
+
 const stepNames = Object.keys(stepMap);
 const valuesToStep = {};
+valuesToStep[0] = 'hit';
 stepNames.forEach(name => valuesToStep[stepMap[name]] = name);
 function valueToStep(v) {
     return valuesToStep[v];
@@ -22,10 +35,10 @@ function valueToStep(v) {
 let steps = [];
 let expected = [
     {
-        value: 0,
+        name: 'hit',
         any: true,
     }, {
-        value: -15,
+        name: 'draw',
         last_idx: 1
     }
 ];
@@ -44,6 +57,7 @@ let lastShiftState = false;
 
 const stepsEl = document.querySelectorAll('.real.steps > *');
 const performedEls = [...stepsEl].map(e => e.getElementsByClassName('performed')[0]);
+const expectedEls = [...stepsEl].map(e => e.getElementsByClassName('expected')[0]);
 const hintsStepsEl = document.querySelectorAll('.hints.steps > *');
 const performHintsEls = [...hintsStepsEl].map(e => e.getElementsByClassName('performed')[0]);
 let lastMouseX, lastMouseY;
@@ -128,6 +142,7 @@ allActions.forEach(el => el.addEventListener('click', ev => {
 
     updateProgress(greenSlider, greenProgress);
     updateSteps();
+    refreshExpected();
 }));
 
 function updateProgress(slider, progress, showTooltip) {
@@ -239,6 +254,77 @@ function refreshNextHints() {
     })
 }
 
+function expectationForStep(i) {
+    let valid = true;
+    const exp = expected[i];
+    if (!exp) return false;
+
+    let hitWhen;
+    let name = nameMap[exp.name];
+    let indicators = [false, false, false];
+    if (exp.any) {
+        hitWhen = 'Any';
+        indicators = [true, true, true];
+    } else if (exp.notlast) {
+        hitWhen = 'Not Last';
+        indicators = [true, true, false];
+    } else {
+        hitWhen = ['Third Last', 'Second Last', 'Last'][exp.last_idx];
+        indicators[exp.last_idx] = true;
+    }
+
+    function nameMatch(perfomed) {
+        return perfomed === exp.name || perfomed.endsWith(exp.name);
+    }
+
+    const rsteps = steps.slice(-3).reverse();
+    let found = false;
+    for (let j = 0; j < 3; j++) {
+        const performed = rsteps[j];
+        if (!performed) continue;
+        if (nameMatch(performed)) {
+            if (exp.any) {
+                found = true;
+            } else if (exp.notlast && j !== 0) {
+                found = true;
+            } else if (exp.last_idx === j) {
+                found = true;
+            }
+        }
+    }
+
+    if (!found) {
+        valid = false;
+    }
+
+    const txt = `${name} ${hitWhen}`
+    return [valid, indicators, txt];
+}
+
+function refreshExpected() {
+    expectedEls.forEach(el => el.replaceChildren([]));
+    stepsEl.forEach((stEl, i) => {
+        const exp = expected[i];
+        const el = expectedEls[i];
+        if (exp) {
+            const [valid, indicators, txt] = expectationForStep(i);
+            el.dataset.tooltip = txt;
+            const newChild = document.createElement('div');
+            newChild.dataset.tooltip = txt;
+            newChild.classList = 'bg ' + exp.name;
+            el.appendChild(newChild);
+            stEl.classList = valid ? 'green' : 'orange';
+            const indicatorsEl = stEl.getElementsByClassName('indicator');
+            indicators.forEach((set, i) => {
+                indicatorsEl[i].classList = set ? 'indicator active' : 'indicator';
+            });
+        } else {
+            el.dataset.tooltip = "";
+            stEl.classList = '';
+        }
+    });
+}
+
 function calculateSteps(V, start = 0, min = 0, max = 150) {
     const dp = Array(max + 1).fill(Infinity);
     const choices = dp.map(() => []);
@@ -313,7 +399,7 @@ function refreshHints(greenProgress = undefined) {
         for (const i in permutations) {
             let p = permutations[i].map(v => {
                 if (v == Wildcard) return Wildcard;
-                else return v.value;
+                else return stepMap[v.name] || 0;
             });
             let lastidx = -1;
             while (p[lastidx+1] == Wildcard) {
