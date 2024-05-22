@@ -8,8 +8,8 @@
     --inventory-height: 105px;
     --tooltip-x: 0;
     --tooltip-y: 0;
-    --tooltip-offset-x: 0;
-    --tooltip-offset-y: 0;
+    --tooltip-offset-x: 8;
+    --tooltip-offset-y: 4;
     --px: calc(1px * var(--gui-scale));
     --2px: calc(2px * var(--gui-scale));
     --3px: calc(3px * var(--gui-scale));
@@ -171,10 +171,14 @@ body {
 
 .slider {
     position: absolute;
-    width: 5px;
+    width: 9px;
     height: 5px;
-    left: calc(1px + min(150, max(0, var(--slider-progress))) * 1px);
+    --zero: -1px;
+    left: calc(var(--zero) + min(150, max(0, var(--slider-progress))) * 1px);
     background-image: url('assets/slider.png');
+    background-size: 5px 5px;
+    background-repeat: no-repeat;
+    background-position-x: 2px;
 
     &::before {
         position: absolute;
@@ -183,7 +187,7 @@ body {
         width: 1px;
         height: 2px;
         top: 2px;
-        left: 2px;
+        left: 4px;
     }
 
     &.red {
