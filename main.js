@@ -403,7 +403,13 @@ function refreshHints(greenProgress = undefined) {
 
         const stepsMustMatch = steps.slice(-ending.length);
 
-        const allMatch = ending.every(v => stepsMustMatch.includes(v));
+        const allMatch = ending.every(v => {
+            const matchIdx = stepsMustMatch.indexOf(v);
+            if (matchIdx > -1) {
+                stepsMustMatch.splice(matchIdx, 1);
+                return true;
+            }
+        });
         if (allMatch) {
             const sliceEnd = -ending.length || undefined;
             return steps.slice(0, sliceEnd).concat(ending, include.reverse());
