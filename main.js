@@ -555,3 +555,119 @@ function refreshHints(greenProgress = undefined) {
     }
     refreshNextHints();
 }
+
+function extractDataFromImage(buffer, w, h) {
+    function findPixel(p, fromY = 0, fromX = 0, tolerance = 30) {
+        let idx = (fromY * w + fromX) * 4;
+        for (let y = fromY; y < h; y++) {
+            for (let x = fromX; x < w; x++, idx += 4) {
+                const dr = Math.abs(p[0] - buffer[idx]);
+                const dg = Math.abs(p[1] - buffer[idx + 1]);
+                const db = Math.abs(p[2] - buffer[idx + 2]);
+                if (dr <= tolerance && dg <= tolerance && db <= tolerance) {
+                    return [x, y];
+                }
+            }
+            fromX = 0;
+        }
+        return [-1, -1];
+    }
+
+    function findPixelReverse(p, fromY = h-1, fromX = w-1, tolerance = 30) {
+        let idx = (fromY * w + fromX) * 4;
+        for (let y = fromY; y >= 0; y--) {
+            for (let x = fromX; x >= 0; x--, idx -= 4) {
+                const dr = Math.abs(p[0] - buffer[idx]);
+                const dg = Math.abs(p[1] - buffer[idx + 1]);
+                const db = Math.abs(p[2] - buffer[idx + 2]);
+                if (dr <= tolerance && dg <= tolerance && db <= tolerance) {
+                    return [x, y];
+                }
+            }
+            fromX = w-1;
+        }
+        return [-1, -1];
+    }
+
+    function scanY(p, fromY = 0, fromX = 0, tolerance = 30) {
+        let start = findPixel(p, fromY, fromX, tolerance);
+
+        let pos = [...start];
+        pos[1] += 1;
+        let lastpos = start;
+        while (pos[0] !== -1 && pos[0] === start[0] && pos[1] - lastpos[1] <= 1) {
+            const lastY = lastpos[1];
+            lastpos = pos;
+            pos = findPixel(p, lastY + 1, start[0], tolerance);
+        }
+
+        return [start[0], start[1], lastpos[1] - start[1] + 1];
+    }
+
+    function scanX(p, fromY = 0, fromX = 0, reverse = false, tolerance = 30) {
+        const dir = reverse ? -1 : 1;
+        const findFn = reverse ? findPixelReverse : findPixel;
+        let start = findFn(p, fromY, fromX, tolerance);
+
+        let pos = [...start];
+        pos[0] += dir;
+        let lastpos = start;
+        while (pos[1] !== -1 && pos[1] === start[1] && dir * (pos[0] - lastpos[0]) <= 1) {
+            const lastX = lastpos[0];
+            lastpos = pos;
+            pos = findFn(p, start[1], lastX + dir, tolerance);
+        }
+
+        const furthest = reverse ? Math.min : Math.max;
+        return [furthest(start[0], lastpos[0]), start[1], Math.abs(lastpos[0] - start[0]) + 1];
+    }
+
+    const greenSliderColor = [0, 255, 6];
+    const redSliderColor = [255, 0, 0];
+    const whiteColor = [255, 255, 255];
+
+    const [redX, redY, redH] = scanY(redSliderColor);
+    if (redX === -1 || redY === -1 || redH === -1) return; // red slider not found
+    
+    const scale = Math.floor(redH / 2);
+    if (redH % scale !== 0) return; // incorrect size
+    
+    const [greenX, greenY, greenH] = scanY(greenSliderColor, redY + redH);
+    if (greenY !== redY + redH + 5 * scale) return;
+    const [, , redW] = scanX(redSliderColor, redY, redX);
+    const [, , greenW] = scanX(greenSliderColor, greenY, greenX);
+    if (greenX === -1 || greenY === -1 || greenH === -1) return; // green slider not found
+    if (greenH !== redH || redW !== greenW) return; // green and red sliders have different sizes
+
+    const [startX,,] = scanX(whiteColor, greenY, greenX, true);
+    if (startX === -1) return;
+
+    const greenDist = greenX - startX;
+    const redDist = redX - startX;
+
+    const greenProgress = greenDist / scale - 3;
+    const redProgress = redDist / scale - 3;
+
+    updateProgress(greenSlider, greenProgress);
+    updateProgress(redSlider, redProgress);
+    refreshHints();
+}
+
+window.addEventListener('paste', async ev => {
+    const data = ev.clipboardData;
+    const blob = data.items[0].getAsFile();
+    if (blob && blob.type.startsWith('image')) {
+        ev.preventDefault();
+        const img = await createImageBitmap(blob);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d', {
+            colorSpace: 'srgb'
+        });
+        ctx.drawImage(img, 0, 0, img.width, img.height);
+        const buf = ctx.getImageData(0, 0, img.width, img.height);
+        extractDataFromImage(buf.data, buf.width, buf.height);
+        canvas.remove();
+    }
+});
