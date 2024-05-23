@@ -165,9 +165,20 @@ body {
 .plan-button {
     top: 37px;
     left: 18px;
-    width: 18px;
-    height: 18px;
-    background-image: url('assets/plan-button.png');
+    width: 12px;
+    height: 12px;
+    margin: 3px;
+
+    &::before {
+        position: absolute;
+        display: block;
+        content: "";
+        top: -3px;
+        left: -3px;
+        width: 18px;
+        height: 18px;
+        background-image: url('assets/plan-button.png');
+    }
 }
 
 .slider {
@@ -322,6 +333,7 @@ body {
     width: 100%;
     height: 100%;
     background-size: cover;
+    background-position: center;
     position: absolute;
 
     &.piece {
@@ -370,6 +382,12 @@ body {
 
     &.shrink {
         background-image: url('assets/shrink.png');
+    }
+
+    &.github {
+        background-image: url('assets/github-mark.svg');
+        background-repeat: no-repeat;
+        background-size: 90%;
     }
 }
 
