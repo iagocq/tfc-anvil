@@ -33,6 +33,6 @@ https://github.com/iagocq/tfc-anvil/assets/18238046/32d45ddd-7ac3-45b3-ab95-4d5b
 
 ## License
 
-The Minecraft font is (c) [Idrees Hassan](https://github.com/IdreesInc) and is licensed under the SIL Open Font License version 1.1. Check the license in the [Minecraft.otf.LICENSE file](./Minecraft.otf.LICENSE).
+The Minecraft font is (c) [Idrees Hassan](https://github.com/IdreesInc) and is licensed under the SIL Open Font License version 1.1. Check the license in the [Minecraft.otf.LICENSE file](./Minecraft.otf.LICENSE). The font and other variations are housed in the [IdreesInc/Minecraft-font repository](https://github.com/IdreesInc/Minecraft-Font).
 
-This software is licensed under the GNU Affero General Public License version 3. Check the license in the [LICENSE file](./LICENSE). The font and other variations are housed in the [IdreesInc/Minecraft-font repository](https://github.com/IdreesInc/Minecraft-Font).
+This software is licensed under the GNU Affero General Public License version 3. Check the license in the [LICENSE file](./LICENSE).
