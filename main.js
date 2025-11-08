@@ -141,10 +141,15 @@ allActions.forEach(el => el.addEventListener('click', ev => {
 }));
 
 function updateProgress(slider, progress, showTooltip) {
-    slider.style.setProperty('--slider-progress', progress);
+    // Ensure progress is always an integer
+    const rounded = Math.round(progress);
+
+    slider.style.setProperty('--slider-progress', rounded);
+
     if (showTooltip !== undefined) {
         if (showTooltip) {
-            slider.dataset.tooltip = progress;
+            // Tooltip should show the same rounded integer
+            slider.dataset.tooltip = rounded;
         } else {
             slider.dataset.tooltip = "";
         }
@@ -152,8 +157,9 @@ function updateProgress(slider, progress, showTooltip) {
 }
 
 function getProgress(slider) {
+    // Parse and round the current progress value
     const progress = +window.getComputedStyle(slider).getPropertyValue('--slider-progress');
-    return progress;
+    return Math.round(progress);
 }
 
 document.querySelectorAll('.slider').forEach(el => {
@@ -276,6 +282,30 @@ function updateSteps() {
     });
 }
 
+function summarizeSteps(stepArray) {
+    if (!stepArray || stepArray.length === 0) return "";
+
+    // Convert step IDs to human-friendly names
+    const names = stepArray.map(s => nameMap[s] || s);
+
+    // Count consecutive repeats
+    const summarized = [];
+    let last = names[0];
+    let count = 1;
+    for (let i = 1; i < names.length; i++) {
+        if (names[i] === last) {
+            count++;
+        } else {
+            summarized.push(count > 1 ? `${last} (x${count})` : last);
+            last = names[i];
+            count = 1;
+        }
+    }
+    summarized.push(count > 1 ? `${last} (x${count})` : last);
+
+    return summarized.join(", ");
+}
+
 function refreshNextHints() {
     const toDisplay = (nextSteps || []).slice(-3).reverse();
     performHintsEls.forEach(el => el.replaceChildren([]));
@@ -289,7 +319,38 @@ function refreshNextHints() {
         } else {
             el.classList = 'performed hidden';
         }
-    })
+    });
+
+    // Build and show summary text
+    const summaryText = summarizeSteps((nextSteps || []).slice().reverse());
+    console.log("Hint Summary:", summaryText);
+
+    let summaryEl = document.getElementById('hint-summary');
+    if (!summaryEl) {
+        summaryEl = document.createElement('div');
+        summaryEl.id = 'hint-summary';
+
+        summaryEl.style.textAlign = 'center';
+        summaryEl.style.marginTop = 'auto';
+        summaryEl.style.fontWeight = 'bold';
+        summaryEl.style.fontSize = 'xx-small';
+        summaryEl.style.color = '#333';
+    
+        const inventory = document.querySelector('.inventory');
+        if (inventory) {
+            // Always append it as the last child
+            inventory.appendChild(summaryEl);
+            inventory.style.display = 'flex';
+            inventory.style.flexDirection = 'column';
+        } else {
+            document.body.appendChild(summaryEl);
+        }
+    }
+    
+    // move it to the bottom explicitly
+    summaryEl.parentNode?.appendChild(summaryEl);
+    
+    summaryEl.textContent = summaryText || "No hints available";
 }
 
 function expectationForStep(i, counted) {
@@ -557,41 +618,69 @@ function refreshHints(greenProgress = undefined) {
 }
 
 function extractDataFromImage(buffer, w, h) {
-    function findPixel(p, fromY = 0, fromX = 0, tolerance = 30) {
+    console.log("extractDataFromImage called with image size:", w, "x", h);
+
+    function findPixel(p, fromY = 0, fromX = 0, tolerance = 60) {
+        console.log(`findPixel(${p}) scanning from (${fromX}, ${fromY}) with tolerance ${tolerance}`);
         let idx = (fromY * w + fromX) * 4;
+        const [rTarget, gTarget, bTarget] = p;
+    
         for (let y = fromY; y < h; y++) {
             for (let x = fromX; x < w; x++, idx += 4) {
-                const dr = Math.abs(p[0] - buffer[idx]);
-                const dg = Math.abs(p[1] - buffer[idx + 1]);
-                const db = Math.abs(p[2] - buffer[idx + 2]);
-                if (dr <= tolerance && dg <= tolerance && db <= tolerance) {
+                const r = buffer[idx];
+                const g = buffer[idx + 1];
+                const b = buffer[idx + 2];
+                
+                // Compute Euclidean distance in RGB space
+                const dist = Math.sqrt(
+                    (rTarget - r) ** 2 +
+                    (gTarget - g) ** 2 +
+                    (bTarget - b) ** 2
+                );
+    
+                if (dist <= tolerance) {
+                    console.log(`Match found at (${x}, ${y}) with distance ${dist.toFixed(1)} [${r},${g},${b}]`);
                     return [x, y];
                 }
             }
             fromX = 0;
         }
+    
+        console.warn(`findPixel(${p}) no match found`);
         return [-1, -1];
     }
-
-    function findPixelReverse(p, fromY = h-1, fromX = w-1, tolerance = 30) {
+    
+    function findPixelReverse(p, fromY = h - 1, fromX = w - 1, tolerance = 60) {
+        console.log(`findPixelReverse(${p}) scanning from (${fromX}, ${fromY}) with tolerance ${tolerance}`);
         let idx = (fromY * w + fromX) * 4;
+        const [rTarget, gTarget, bTarget] = p;
+    
         for (let y = fromY; y >= 0; y--) {
             for (let x = fromX; x >= 0; x--, idx -= 4) {
-                const dr = Math.abs(p[0] - buffer[idx]);
-                const dg = Math.abs(p[1] - buffer[idx + 1]);
-                const db = Math.abs(p[2] - buffer[idx + 2]);
-                if (dr <= tolerance && dg <= tolerance && db <= tolerance) {
+                const r = buffer[idx];
+                const g = buffer[idx + 1];
+                const b = buffer[idx + 2];
+    
+                const dist = Math.sqrt(
+                    (rTarget - r) ** 2 +
+                    (gTarget - g) ** 2 +
+                    (bTarget - b) ** 2
+                );
+    
+                if (dist <= tolerance) {
+                    console.log(`Reverse match at (${x}, ${y}) with distance ${dist.toFixed(1)} [${r},${g},${b}]`);
                     return [x, y];
                 }
             }
-            fromX = w-1;
+            fromX = w - 1;
         }
+    
+        console.warn(`findPixelReverse(${p}) no match found`);
         return [-1, -1];
     }
 
     function scanY(p, fromY = 0, fromX = 0, tolerance = 30) {
-        let start = findPixel(p, fromY, fromX, tolerance);
-
+        const start = findPixel(p, fromY, fromX, tolerance);
         let pos = [...start];
         pos[1] += 1;
         let lastpos = start;
@@ -600,15 +689,15 @@ function extractDataFromImage(buffer, w, h) {
             lastpos = pos;
             pos = findPixel(p, lastY + 1, start[0], tolerance);
         }
-
-        return [start[0], start[1], lastpos[1] - start[1] + 1];
+        const result = [start[0], start[1], lastpos[1] - start[1] + 1];
+        console.log(`scanY(${p}) ->`, result);
+        return result;
     }
 
     function scanX(p, fromY = 0, fromX = 0, reverse = false, tolerance = 30) {
         const dir = reverse ? -1 : 1;
         const findFn = reverse ? findPixelReverse : findPixel;
-        let start = findFn(p, fromY, fromX, tolerance);
-
+        const start = findFn(p, fromY, fromX, tolerance);
         let pos = [...start];
         pos[0] += dir;
         let lastpos = start;
@@ -617,57 +706,243 @@ function extractDataFromImage(buffer, w, h) {
             lastpos = pos;
             pos = findFn(p, start[1], lastX + dir, tolerance);
         }
-
         const furthest = reverse ? Math.min : Math.max;
-        return [furthest(start[0], lastpos[0]), start[1], Math.abs(lastpos[0] - start[0]) + 1];
+        const result = [furthest(start[0], lastpos[0]), start[1], Math.abs(lastpos[0] - start[0]) + 1];
+        console.log(`scanX(${p}, reverse=${reverse}) ->`, result);
+        return result;
     }
 
     const greenSliderColor = [0, 255, 6];
     const redSliderColor = [255, 0, 0];
     const whiteColor = [255, 255, 255];
 
-    const [redX, redY, redH] = scanY(redSliderColor);
-    if (redX === -1 || redY === -1 || redH === -1) return; // red slider not found
-    
+    console.log("Starting red slider scan...");
+    let redX = -1, redY = -1, redH = -1;
+    for (const tol of [30, 50, 70, 90]) {
+        console.log(`Trying red scan with tolerance ${tol}`);
+        [redX, redY, redH] = scanY(redSliderColor, 0, 0, tol);
+        if (redX !== -1) {
+            console.log(`Red slider found with tolerance ${tol}`);
+            break;
+        }
+    }
+    if (redX === -1) {
+        console.error("Red slider not found even with increased tolerance.");
+        return;
+    }
+
     const scale = Math.floor(redH / 2);
-    if (redH % scale !== 0) return; // incorrect size
-    
-    const [greenX, greenY, greenH] = scanY(greenSliderColor, redY + redH);
-    if (greenY !== redY + redH + 5 * scale) return;
+    console.log("Red slider height:", redH, "-> scale:", scale);
+    if (redH % scale !== 0) {
+        console.warn("Incorrect red slider size");
+        return;
+    }
+
+    console.log("Scanning green slider...");
+    let greenX = -1, greenY = -1, greenH = -1;
+    for (const tol of [30, 50, 70, 90]) {
+        console.log(`Trying green scan with tolerance ${tol}`);
+        [greenX, greenY, greenH] = scanY(greenSliderColor, redY + redH, 0, tol);
+        if (greenX !== -1) {
+            console.log(`Green slider found with tolerance ${tol}`);
+            if (greenY !== redY + redH + 5 * scale) {
+                console.warn("Green slider not correctly positioned relative to red slider");
+                continue;
+            }
+            break;
+        }
+    }
+    if (greenX === -1) {
+        console.error("Green slider not found even with increased tolerance.");
+        return;
+    }
+
     const [, , redW] = scanX(redSliderColor, redY, redX);
     const [, , greenW] = scanX(greenSliderColor, greenY, greenX);
-    if (greenX === -1 || greenY === -1 || greenH === -1) return; // green slider not found
-    if (greenH !== redH || redW !== greenW) return; // green and red sliders have different sizes
+    console.log("Red width:", redW, "Green width:", greenW);
 
-    const [startX,,] = scanX(whiteColor, greenY, greenX, true);
-    if (startX === -1) return;
+    if (greenX === -1 || greenY === -1 || greenH === -1) {
+        console.warn("Green slider not found");
+        return;
+    }
+    if (greenH !== redH || redW !== greenW) {
+        console.warn("Slider size mismatch");
+        return;
+    }
+
+    console.log("Scanning for white start...");
+    const [startX] = scanX(whiteColor, greenY, greenX, true);
+    if (startX === -1) {
+        console.warn("White reference not found");
+        return;
+    }
 
     const greenDist = greenX - startX;
     const redDist = redX - startX;
-
     const greenProgress = greenDist / scale - 3;
     const redProgress = redDist / scale - 3;
 
-    updateProgress(greenSlider, greenProgress);
-    updateProgress(redSlider, redProgress);
-    refreshHints();
+    console.log("Distances -> Green:", greenDist, "Red:", redDist);
+    console.log("Progress -> Green:", greenProgress, "Red:", redProgress);
+
+    // These might be undefined, so log before calling:
+    console.log("updateProgress and refreshHints availability:", typeof updateProgress, typeof refreshHints);
+    if (typeof updateProgress === "function") {
+        updateProgress(greenSlider, greenProgress);
+        updateProgress(redSlider, redProgress);
+    } else {
+        console.warn("updateProgress is not defined!");
+    }
+
+    if (typeof refreshHints === "function") {
+        refreshHints();
+    } else {
+        console.warn("refreshHints is not defined!");
+    }
 }
 
-window.addEventListener('paste', async ev => {
-    const data = ev.clipboardData;
-    const blob = data.items[0].getAsFile();
-    if (blob && blob.type.startsWith('image')) {
-        ev.preventDefault();
-        const img = await createImageBitmap(blob);
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d', {
-            colorSpace: 'srgb'
-        });
-        ctx.drawImage(img, 0, 0, img.width, img.height);
-        const buf = ctx.getImageData(0, 0, img.width, img.height);
-        extractDataFromImage(buf.data, buf.width, buf.height);
-        canvas.remove();
+// Paste, upload or drag-and-drop a screenshot
+window.addEventListener('DOMContentLoaded', () => {
+    // Create upload label + input
+    const label = document.createElement('label');
+    label.htmlFor = 'screenshot-upload';
+    label.textContent = 'Paste, upload or drag your interface screenshot below:';
+    label.style.display = 'block';
+    label.style.textAlign = 'center';
+    label.style.fontWeight = 'bold';
+    label.style.marginTop = '1em';
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.id = 'screenshot-upload';
+    input.style.display = 'block';
+    input.style.margin = '1em auto';
+
+    // Drop zone (visual feedback area)
+    const dropZone = document.createElement('div');
+    dropZone.id = 'drop-zone';
+    dropZone.textContent = 'Paste or drag image here';
+    dropZone.style.width = '300px';
+    dropZone.style.height = '150px';
+    dropZone.style.border = '2px dashed #888';
+    dropZone.style.borderRadius = '10px';
+    dropZone.style.display = 'flex';
+    dropZone.style.alignItems = 'center';
+    dropZone.style.justifyContent = 'center';
+    dropZone.style.margin = '1em auto';
+    dropZone.style.color = '#555';
+    dropZone.style.fontSize = '16px';
+    dropZone.style.transition = 'background 0.2s, border-color 0.2s';
+
+    document.body.prepend(dropZone);
+    document.body.prepend(input);
+    document.body.prepend(label);
+
+    // Common image processing function
+    async function handleImageFile(file) {
+        if (!file) {
+            console.warn("No file provided.");
+            return;
+        }
+        console.log("File received:", file.name, file.type, file.size, "bytes");
+
+        if (!file.type.startsWith('image/')) {
+            console.error("Selected file is not an image.");
+            return;
+        }
+
+        // Hide the placeholder drop zone once an image is provided
+        const dropZone = document.getElementById('drop-zone');
+        if (dropZone) dropZone.style.display = 'none';
+
+        try {
+            const img = await createImageBitmap(file);
+            console.log("Loaded image:", img.width, "x", img.height);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            const ctx = canvas.getContext('2d', { colorSpace: 'srgb' });
+            ctx.drawImage(img, 0, 0, img.width, img.height);
+
+            const buf = ctx.getImageData(0, 0, img.width, img.height);
+            console.log("Passing image data to extractDataFromImage...");
+            extractDataFromImage(buf.data, buf.width, buf.height);
+
+            // Optional preview
+            let preview = document.getElementById('uploaded-preview');
+            if (!preview) {
+                preview = document.createElement('img');
+                preview.id = 'uploaded-preview';
+                preview.style.maxWidth = '300px';
+                preview.style.display = 'block';
+                preview.style.margin = '1em auto';
+                preview.style.borderRadius = '8px';
+                preview.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+                
+                // Place it above inventory, replacing drop zone
+                const inventory = document.querySelector('.inventory');
+                const dropZone = document.getElementById('drop-zone');
+                if (dropZone) dropZone.remove(); // hide drag area once image is uploaded
+                
+                if (inventory) {
+                    // insert preview *just before* the inventory section
+                    inventory.parentNode.insertBefore(preview, inventory);
+                } else {
+                    document.body.insertBefore(preview, document.body.firstChild);
+                }
+            }
+            preview.src = URL.createObjectURL(file);
+
+            canvas.remove();
+        } catch (err) {
+            console.error("Error processing image:", err);
+        }
     }
+
+    // Handle normal file upload
+    input.addEventListener('change', ev => {
+        handleImageFile(ev.target.files[0]);
+    });
+
+    // Handle drag-and-drop
+    dropZone.addEventListener('dragover', ev => {
+        ev.preventDefault();
+        dropZone.style.background = '#eef';
+        dropZone.style.borderColor = '#44f';
+    });
+
+    dropZone.addEventListener('dragleave', ev => {
+        ev.preventDefault();
+        dropZone.style.background = '';
+        dropZone.style.borderColor = '#888';
+    });
+
+    dropZone.addEventListener('drop', ev => {
+        ev.preventDefault();
+        dropZone.style.background = '';
+        dropZone.style.borderColor = '#888';
+
+        const file = ev.dataTransfer.files[0];
+        handleImageFile(file);
+    });
+
+    // Handle paste
+    window.addEventListener('paste', async ev => {
+    const items = ev.clipboardData?.items;
+    if (!items) return;
+
+    const imageItem = [...items].find(item => item.type.startsWith('image/'));
+    if (!imageItem) {
+        console.warn("No image found in clipboard data.");
+        return;
+    }
+
+    ev.preventDefault();
+    const blob = imageItem.getAsFile();
+    console.log("Clipboard image detected:", blob.type, blob.size, "bytes");
+    await handleImageFile(blob);
+    });
 });

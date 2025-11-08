@@ -131,6 +131,12 @@ body {
     }
 }
 
+#hint-summary {
+  display: flex;
+  top: 110px;
+  font-size: xx-small;
+}
+
 .all-actions {
     display: flex;
     left: 50px;
